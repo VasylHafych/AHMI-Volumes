@@ -1,13 +1,29 @@
+"""
+    Abstract type for whitening algorithms.
+"""
 abstract type WhiteningAlgorithm end
 
+"""
+    Whitening by eigenvalue Decomposition using only dimensions specified by steep_edges_ind .== false. 
+    Other dimensions are not whitened to preserve space morphology. 
+"""
 @with_kw struct PartialEigenDecompos <: WhiteningAlgorithm
     steep_edges_ind = Array{Bool}[]
 end
 
+"""
+    Whitening by eigenvalue decomposition for all dimensions. 
+"""
 struct EigenDecompos <: WhiteningAlgorithm end
 
+"""
+    Standardize data to unit variance, with no decorrelation. 
+"""
 struct Standardizing <: WhiteningAlgorithm end
 
+"""
+    Given samples, determine which dimension/s contain steep edges.  
+"""
 function find_steep_edges(
         samples::AbstractArray{F,1}, 
         w::AbstractArray{R}; α=0.01, 
@@ -53,6 +69,9 @@ function _find_whiten_trans(
     
 end
 
+"""
+    Find PartialEigenDecompos transformation. Returns named tuple with transformation matrix W and mean vector μ. 
+"""
 function find_whiten_trans(
         samples::AbstractArray{F,2}, 
         w::AbstractArray{R}, 
@@ -93,6 +112,9 @@ function find_whiten_trans(
     return (W = W, μ=μ)
 end
 
+"""
+    Apply EigenDecompos/PartialEigenDecompos transformation. 
+"""
 function apply_whiten_trans(
         samples::AbstractArray{F}, 
         tranform::NamedTuple, 
