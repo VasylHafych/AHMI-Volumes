@@ -54,24 +54,26 @@ function bat_integrate(
         
         for clust_ind in Base.OneTo(nclust)
             cluster_mask = clst_assign .== clust_ind
-            local_tranform = find_whiten_trans(samples_trans[:,cluster_mask], weights[cluster_mask], algorithm.whitening)
-            samples_locally_trans = apply_whiten_trans(samples_trans, local_tranform, algorithm.whitening)
-            clst_center = apply_whiten_trans(clst_centers[clust_ind], local_tranform, algorithm.whitening)
             
-            mask_volume, volume = find_volumes(
-                samples_locally_trans, 
-                weights, log_d, 
-                clst_center, 
-                cluster_mask,
-                (t_rat, t_quant), 
-                algorithm.volumes
-            )
+            if sum(cluster_mask) > 0.005 * length(weights)
+                local_tranform = find_whiten_trans(samples_trans[:,cluster_mask], weights[cluster_mask], algorithm.whitening)
+                samples_locally_trans = apply_whiten_trans(samples_trans, local_tranform, algorithm.whitening)
+                clst_center = apply_whiten_trans(clst_centers[clust_ind], local_tranform, algorithm.whitening)
+                
+                mask_volume, volume = find_volumes(
+                    samples_locally_trans, 
+                    weights, log_d, 
+                    clst_center, 
+                    cluster_mask,
+                    (t_rat, t_quant), 
+                    algorithm.volumes
+                )
+                hm_estimate = compute_hm(weights, log_d, mask_volume, volume, log(abs(det(tranform.W))), log(abs(det(local_tranform.W))))
+                push!(debug, (smpls = samples_locally_trans, cl_mask = cluster_mask, cl_center = clst_center, volume = mask_volume) )
+                push!(int_estimates, hm_estimate)
+                push!(log_vol, volume)
+            end
             
-            hm_estimate = compute_hm(weights, log_d, mask_volume, volume, log(abs(det(tranform.W))), log(abs(det(local_tranform.W))))
-            
-            push!(debug, (smpls = samples_locally_trans, cl_mask = cluster_mask, cl_center = clst_center, volume = mask_volume) )
-            push!(int_estimates, hm_estimate)
-            push!(log_vol, log(volume))
         end
     end
     

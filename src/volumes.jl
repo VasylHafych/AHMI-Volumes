@@ -49,7 +49,7 @@ function find_volumes(
         size_run = size_run .* algorithm.step 
         volume_mask = prod((clst_center .- size_run) .< samples .< (clst_center .+ size_run),  dims=1)[1,:]
         ll_masked = log_d[volume_mask]
-        bool_check = (maximum(ll_masked) - minimum(ll_masked) > 0.8*t_treshold) && (minimum(ll_masked) < t_quantile)
+        bool_check = (maximum(ll_masked) - minimum(ll_masked) > algorithm.α*t_treshold) && (minimum(ll_masked) < t_quantile)
         iter_ind += 1
         @info "Decreasing Volume "
     end
@@ -85,20 +85,19 @@ function find_volumes(
     size_run = quantile(r_vect, FrequencyWeights(w[clst_mask]), 0.5)
     volume_mask = vec(sqrt.(sum((samples .- clst_center).^2, dims=1))) .< size_run
     ll_masked = log_d[volume_mask]
-    
-    bool_check = (maximum(ll_masked) - minimum(ll_masked) > algorithm.α*t_treshold) && (minimum(ll_masked) < t_quantile)
+    bool_check = (maximum(ll_masked) - minimum(ll_masked) < algorithm.α*t_treshold) && (minimum(ll_masked) > t_quantile)
     iter_ind = 1
     
-    while  bool_check && (iter_ind < algorithm.niter)
-        size_run = size_run .* algorithm.step 
-        volume_mask = vec(sqrt.(sum((samples[:,clst_mask] .- clst_center).^2, dims=1))) .< size_run
+    while  !bool_check && (iter_ind < algorithm.niter)
+        @info "Decreasing Volume "
+        size_run = size_run .* algorithm.step
+        volume_mask = vec(sqrt.(sum((samples .- clst_center).^2, dims=1))) .< size_run
         ll_masked = log_d[volume_mask]
         bool_check = (maximum(ll_masked) - minimum(ll_masked) > 0.8*t_treshold) && (minimum(ll_masked) < t_quantile)
         iter_ind += 1
-        @info "Decreasing Volume "
     end
     
-    if bool_check
+    if !bool_check
         volume_mask = zeros(Bool, length(volume_mask))
         log_volume = NaN
     else 
